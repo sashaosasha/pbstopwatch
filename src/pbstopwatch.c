@@ -196,17 +196,19 @@ void toolbar_update_proc(Layer *me, GContext* ctx)
     graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_fill_color(ctx, GColorWhite);
     int left = me->frame.origin.x;
-    //int w = me->bounds.size.w;
-    int top = stopwatch.timers[0].is_running ? BTN_STOP : BTN_GO;
-    int sz = 20;
-    graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(SCREEN_WIDTH - TOOLBAR_WIDTH, 20, sz, sz));
-    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_LAP].bmp, GRect(SCREEN_WIDTH - TOOLBAR_WIDTH, SCREEN_HEIGHT / 2, sz, sz));
-    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_CLEAR].bmp, GRect(SCREEN_WIDTH - TOOLBAR_WIDTH, SCREEN_HEIGHT - 20, sz, sz));
     /*
+    int top = stopwatch.timers[0].is_running ? BTN_STOP : BTN_GO;
+
+    int sz = 20;
+
+    graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(left, 20, sz, sz));
+    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_LAP].bmp, GRect(left, SCREEN_HEIGHT / 2, sz, sz));
+    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_CLEAR].bmp, GRect(left, SCREEN_HEIGHT - 20, sz, sz));
+    */
     graphics_draw_circle(ctx, GPoint(left + 8, 20), 3);
     graphics_draw_circle(ctx, GPoint(left + 8, SCREEN_HEIGHT - 20), 3);
     graphics_draw_circle(ctx, GPoint(left + 8, SCREEN_HEIGHT / 2), 3);
-    */
+
 }
 
 
@@ -255,10 +257,12 @@ void handle_init(AppContextRef ctx)
   init_button_layer(&stopwatch.buttonsLayer);
   init_debug();
 
+/*
   bmp_init_container(RESOURCE_ID_GO_BUTTON, &buttons[BTN_GO]);
   bmp_init_container(RESOURCE_ID_STOP_BUTTON, &buttons[BTN_STOP]);
   bmp_init_container(RESOURCE_ID_LAP_BUTTON, &buttons[BTN_LAP]);
   bmp_init_container(RESOURCE_ID_CLEAR_BUTTON, &buttons[BTN_CLEAR]);
+*/
 }
 
 // Adds 1 second to a time
