@@ -11,26 +11,6 @@
 	    "type":"png",
 	    "defName":"STOPWATCH_ICON",
 	    "file":"stopwatch.png"
-	   },
-	   {
-	    "type":"png",
-	    "defName":"GO_BUTTON",
-	    "file":"go.png"
-	   },
-	   {
-	    "type":"png",
-	    "defName":"STOP_BUTTON",
-	    "file":"stop.png"
-	   },
-	   {
-	    "type":"png",
-	    "defName":"LAP_BUTTON",
-	    "file":"lap.png"
-	   },
-	   {
-	    "type":"png",
-	    "defName":"CLEAR_BUTTON",
-	    "file":"clear.png"
 	   }
 	  ]
 }
