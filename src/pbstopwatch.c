@@ -127,7 +127,7 @@ void down_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
 //
 void shift_timers()
 {
-    for (int i = MAX_TIMERS - 1; i >= 0; --i)
+    for (int i = stopwatch.used_timers - 1; i >= 0; --i)
     {
         memcpy(&stopwatch.timers[i].time, &stopwatch.timers[i-1].time, sizeof(PblTm));
         stopwatch.timers[i].is_running = stopwatch.timers[i-1].is_running;
@@ -168,6 +168,7 @@ void select_dbl_click_handler(ClickRecognizerRef recognizer, Window *window)
   if (stopwatch.timers[0].is_running)
   {
     shift_timers();
+    stopwatch.timers[0].is_running = true;
   }
 }
 
@@ -182,11 +183,46 @@ void click_config_provider(ClickConfig **config, Window *window) {
 
   config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
   config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_dbl_click_handler;
-  config[BUTTON_ID_SELECT]->long_click.delay_ms = 700;
+  config[BUTTON_ID_SELECT]->long_click.delay_ms = 500;
 
   config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
   config[BUTTON_ID_DOWN]->long_click.delay_ms = 700;
   config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler) down_long_click_handler;
+}
+
+
+void draw_play(GContext* ctx, GPoint origin)
+{
+    for (int i = 0; i < 6; ++i)
+    {
+        graphics_draw_line(ctx, GPoint(origin.x + 5 + i, origin.y + 2 + i),
+                                GPoint(origin.x + 5 + i, origin.y + 12 - i));
+    }
+}
+
+void draw_stop(GContext* ctx, GPoint origin)
+{
+    for (int i = 0; i < 3; ++i)
+    {
+        graphics_draw_line(ctx, GPoint(origin.x + 4+i, origin.y + 2),
+                                GPoint(origin.x + 4+i, origin.y + 12));
+        graphics_draw_line(ctx, GPoint(origin.x + 10+i, origin.y + 2),
+                                GPoint(origin.x + 10+i, origin.y + 12));
+    }
+}
+
+void draw_lap(GContext* ctx, GPoint origin)
+{
+    graphics_draw_line(ctx, GPoint(origin.x + 7, origin.y + 2), GPoint(origin.x + 7, origin.y + 12));
+    graphics_draw_line(ctx, GPoint(origin.x + 8, origin.y + 2), GPoint(origin.x + 8, origin.y + 12));
+    graphics_draw_line(ctx, GPoint(origin.x + 5, origin.y + 10), GPoint(origin.x + 10, origin.y + 10));
+    graphics_draw_line(ctx, GPoint(origin.x + 6, origin.y + 11), GPoint(origin.x + 9, origin.y + 11));
+}
+
+void draw_reset(GContext* ctx, GPoint origin)
+{
+    graphics_draw_line(ctx, GPoint(origin.x + 4, origin.y + 2), GPoint(origin.x + 10, origin.y + 12));
+    graphics_draw_line(ctx, GPoint(origin.x + 10, origin.y + 2), GPoint(origin.x + 4, origin.y + 12));
 }
 
 // Update function for toolbar layer.
@@ -194,20 +230,38 @@ void click_config_provider(ClickConfig **config, Window *window) {
 void toolbar_update_proc(Layer *me, GContext* ctx)
 {
     graphics_context_set_stroke_color(ctx, GColorWhite);
-    graphics_context_set_fill_color(ctx, GColorWhite);
-    int left = me->frame.origin.x;
+    graphics_context_set_fill_color(ctx, GColorBlack);
+    int left = me->bounds.origin.x;
+
+    int sz = 16;
+    int top_button_y = 8;
+    int middle_button_y = SCREEN_HEIGHT/2 - sz;
+    int bottom_button_dy = 20;
+
+    if (stopwatch.timers[0].is_running )
+    {
+        draw_stop(ctx, GPoint(left, top_button_y));
+        draw_lap(ctx, GPoint(left, middle_button_y));
+    }
+    else
+    {
+        draw_play(ctx, GPoint(left, top_button_y));
+        graphics_fill_rect(ctx, GRect(left, middle_button_y, sz, sz), 0, GCornerNone);
+    }
+    draw_reset(ctx,  GPoint(left, SCREEN_HEIGHT - bottom_button_dy - sz));
+
     /*
-    int top = stopwatch.timers[0].is_running ? BTN_STOP : BTN_GO;
-
-    int sz = 20;
-
     graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(left, 20, sz, sz));
+    graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(128, 40, sz, sz));
     graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_LAP].bmp, GRect(left, SCREEN_HEIGHT / 2, sz, sz));
     graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_CLEAR].bmp, GRect(left, SCREEN_HEIGHT - 20, sz, sz));
     */
+
+/*
     graphics_draw_circle(ctx, GPoint(left + 8, 20), 3);
     graphics_draw_circle(ctx, GPoint(left + 8, SCREEN_HEIGHT - 20), 3);
     graphics_draw_circle(ctx, GPoint(left + 8, SCREEN_HEIGHT / 2), 3);
+*/
 
 }
 
@@ -258,11 +312,12 @@ void handle_init(AppContextRef ctx)
   init_debug();
 
 /*
+  resource_init_current_app(&VERSION);
   bmp_init_container(RESOURCE_ID_GO_BUTTON, &buttons[BTN_GO]);
   bmp_init_container(RESOURCE_ID_STOP_BUTTON, &buttons[BTN_STOP]);
   bmp_init_container(RESOURCE_ID_LAP_BUTTON, &buttons[BTN_LAP]);
   bmp_init_container(RESOURCE_ID_CLEAR_BUTTON, &buttons[BTN_CLEAR]);
-*/
+  */
 }
 
 // Adds 1 second to a time
