@@ -127,16 +127,16 @@ void down_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
 //
 void shift_timers()
 {
-    for (int i = stopwatch.used_timers - 1; i >= 0; --i)
+    if (stopwatch.used_timers < MAX_TIMERS)
+    {
+        ++stopwatch.used_timers;
+    }
+    for (int i = stopwatch.used_timers-1; i >= 1; --i)
     {
         memcpy(&stopwatch.timers[i].time, &stopwatch.timers[i-1].time, sizeof(PblTm));
         stopwatch.timers[i].is_running = stopwatch.timers[i-1].is_running;
     }
     memset(&stopwatch.timers[0].time, 0, sizeof(PblTm));
-    if (stopwatch.used_timers < MAX_TIMERS)
-    {
-        ++stopwatch.used_timers;
-    }
     for (int i = 0; i < stopwatch.used_timers; ++i)
     {
         draw_timer(i);
