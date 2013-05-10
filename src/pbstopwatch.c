@@ -125,7 +125,7 @@ void down_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
 
 // Shift all timers down preserving timer to layer association but moving time value and running state
 //
-void shift_timers()
+void shift_timers(bool reset_main)
 {
     if (stopwatch.used_timers < MAX_TIMERS)
     {
@@ -136,40 +136,49 @@ void shift_timers()
         memcpy(&stopwatch.timers[i].time, &stopwatch.timers[i-1].time, sizeof(PblTm));
         stopwatch.timers[i].is_running = stopwatch.timers[i-1].is_running;
     }
-    memset(&stopwatch.timers[0].time, 0, sizeof(PblTm));
+    if (reset_main)
+    {
+        memset(&stopwatch.timers[0].time, 0, sizeof(PblTm));
+    }
     for (int i = 0; i < stopwatch.used_timers; ++i)
     {
         draw_timer(i);
     }
 }
 
-// middle button click -> lap and freeze
+// middle button click -> lap and freeze lap time + reset main timer
 //
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *window)
 {
   (void)recognizer;
   (void)window;
 
-  if (stopwatch.timers[0].is_running)
-  {
-    stopwatch.timers[0].is_running = false;
-    shift_timers();
-    stopwatch.timers[0].is_running = true;
-  }
+  stopwatch.timers[0].is_running = false;
+  shift_timers(true);
+  stopwatch.timers[0].is_running = true;
 }
 
-// middle button dbl click -> lap and continue
+// middle button long click -> lap and continue lap timer + reset main
+//
+void select_long_click_handler(ClickRecognizerRef recognizer, Window *window)
+{
+  (void)recognizer;
+  (void)window;
+
+  shift_timers(true);
+  stopwatch.timers[0].is_running = true;
+}
+
+// middle button dbl click -> lap and freeze + continue main timer
 //
 void select_dbl_click_handler(ClickRecognizerRef recognizer, Window *window)
 {
   (void)recognizer;
   (void)window;
 
-  if (stopwatch.timers[0].is_running)
-  {
-    shift_timers();
-    stopwatch.timers[0].is_running = true;
-  }
+  stopwatch.timers[0].is_running = false;
+  shift_timers(false);
+  stopwatch.timers[0].is_running = true;
 }
 
 // Configure button click handlers
@@ -182,8 +191,13 @@ void click_config_provider(ClickConfig **config, Window *window) {
   config[BUTTON_ID_UP]->long_click.delay_ms = 700;
 
   config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
-  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_dbl_click_handler;
+  config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler) select_long_click_handler;
   config[BUTTON_ID_SELECT]->long_click.delay_ms = 500;
+  config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler) select_dbl_click_handler;
+  config[BUTTON_ID_SELECT]->multi_click.min = 2;
+  config[BUTTON_ID_SELECT]->multi_click.max = 2;
+  config[BUTTON_ID_SELECT]->multi_click.last_click_only = true;
+  config[BUTTON_ID_SELECT]->multi_click.timeout = 1200;
 
   config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
   config[BUTTON_ID_DOWN]->long_click.delay_ms = 700;
@@ -225,37 +239,42 @@ void draw_reset(GContext* ctx, GPoint origin)
     graphics_draw_line(ctx, GPoint(origin.x + 10, origin.y + 2), GPoint(origin.x + 4, origin.y + 12));
 }
 
+void draw_bitmap(GContext* ctx, GBitmap* bmp, GPoint pt)
+{
+    graphics_draw_bitmap_in_rect(ctx, bmp, GRect(pt.x, pt.y, bmp->bounds.size.w, bmp->bounds.size.h));
+}
+
 // Update function for toolbar layer.
 // Draw buttons
 void toolbar_update_proc(Layer *me, GContext* ctx)
 {
     graphics_context_set_stroke_color(ctx, GColorWhite);
     graphics_context_set_fill_color(ctx, GColorBlack);
-    int left = me->bounds.origin.x;
 
     int sz = 16;
     int top_button_y = 8;
     int middle_button_y = SCREEN_HEIGHT/2 - sz;
     int bottom_button_dy = 20;
 
+/*
+    int left = me->bounds.origin.x;
     if (stopwatch.timers[0].is_running )
     {
         draw_stop(ctx, GPoint(left, top_button_y));
-        draw_lap(ctx, GPoint(left, middle_button_y));
     }
     else
     {
         draw_play(ctx, GPoint(left, top_button_y));
-        graphics_fill_rect(ctx, GRect(left, middle_button_y, sz, sz), 0, GCornerNone);
     }
+    draw_lap(ctx, GPoint(left, middle_button_y));
     draw_reset(ctx,  GPoint(left, SCREEN_HEIGHT - bottom_button_dy - sz));
+*/
+    int left = 2;
+    int top = stopwatch.timers[0].is_running ? BTN_STOP : BTN_GO;
+    draw_bitmap(ctx, &buttons[top].bmp, GPoint(left, top_button_y));
+    draw_bitmap(ctx, &buttons[BTN_LAP].bmp, GPoint(left, middle_button_y));
+    draw_bitmap(ctx, &buttons[BTN_CLEAR].bmp, GPoint(left, SCREEN_HEIGHT - bottom_button_dy - sz));
 
-    /*
-    graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(left, 20, sz, sz));
-    graphics_draw_bitmap_in_rect(ctx, &buttons[top].bmp, GRect(128, 40, sz, sz));
-    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_LAP].bmp, GRect(left, SCREEN_HEIGHT / 2, sz, sz));
-    graphics_draw_bitmap_in_rect(ctx, &buttons[BTN_CLEAR].bmp, GRect(left, SCREEN_HEIGHT - 20, sz, sz));
-    */
 
 /*
     graphics_draw_circle(ctx, GPoint(left + 8, 20), 3);
@@ -311,13 +330,11 @@ void handle_init(AppContextRef ctx)
   init_button_layer(&stopwatch.buttonsLayer);
   init_debug();
 
-/*
   resource_init_current_app(&VERSION);
   bmp_init_container(RESOURCE_ID_GO_BUTTON, &buttons[BTN_GO]);
   bmp_init_container(RESOURCE_ID_STOP_BUTTON, &buttons[BTN_STOP]);
   bmp_init_container(RESOURCE_ID_LAP_BUTTON, &buttons[BTN_LAP]);
   bmp_init_container(RESOURCE_ID_CLEAR_BUTTON, &buttons[BTN_CLEAR]);
-  */
 }
 
 // Adds 1 second to a time
